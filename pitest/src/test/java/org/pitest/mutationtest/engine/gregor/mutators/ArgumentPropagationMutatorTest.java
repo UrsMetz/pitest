@@ -15,13 +15,19 @@
 
 package org.pitest.mutationtest.engine.gregor.mutators;
 
+import foo.HasStringMethodCall2;
+import foo.HasStringMethodCall2Mutated;
+import foo.MyListener;
 import org.junit.Before;
 import org.junit.Test;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.util.TraceClassVisitor;
 import org.pitest.mutationtest.engine.Mutant;
 import org.pitest.mutationtest.engine.gregor.MutatorTestBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -58,6 +64,28 @@ public class ArgumentPropagationMutatorTest extends MutatorTestBase {
     public String call() throws Exception {
       return delegate(arg);
     }
+  }
+
+  @Test
+  public void shouldReplaceMethodCallWithStringArgumentInCallParameter() throws Exception {
+    final Mutant mutant = getFirstMutant(HasStringMethodCall2.class);
+    MyListener listener = new MyListener();
+    mutateAndCall(new HasStringMethodCall2("lowercase", listener), mutant);
+
+    ClassReader cr = new ClassReader(mutant.getBytes());
+    cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), ClassReader.SKIP_DEBUG);
+
+    assertThat(listener.isWasCalled()).isEqualTo(true);
+    assertThat(listener.getCalledWith()).isEqualTo("lowercase");
+  }
+
+  @Test
+  public void shouldReplaceMethodCallWithStringArgumentInCallParameter2() throws Exception {
+    MyListener listener = new MyListener();
+    new HasStringMethodCall2Mutated("lowercase", listener).call();
+
+    assertThat(listener.isWasCalled()).isEqualTo(true);
+    assertThat(listener.getCalledWith()).isEqualTo("lowercase");
   }
 
   @Test
